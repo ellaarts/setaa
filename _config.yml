@@ -108,6 +108,8 @@ deploy:
   # repo: https://github.com/blinkfox/blinkfox.github.io.git
   repo: https://github.com/ellaarts/blog
   branch: gh-pages
+  name: ellaarts
+  email: ellaarts@outlook.com
 
 # search
 search:
