@@ -1,5 +1,7 @@
 name: Hexo Deploy
 
+# https://printempw.github.io/use-github-actions-to-deploy-hexo-blog/
+
 # 只监听 source 分支的改动
 on:
   push:
