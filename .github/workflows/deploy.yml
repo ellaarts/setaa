@@ -66,8 +66,6 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.email "ellaarts@outlook.com"
           git config --global user.name "ellaarts"
-          echo "deploy-key="
-          echo "$DEPLOY_KEY"
 
       # 生成并部署
       - name: Deploy
