@@ -1,75 +1,66 @@
-name: Hexo Deploy
+name: CI
 
-# https://printempw.github.io/use-github-actions-to-deploy-hexo-blog/
-
-# 只监听 source 分支的改动
 on:
   push:
     branches:
       - source
 
-# 自定义环境变量
 env:
-  POST_ASSET_IMAGE_CDN: false
+  GIT_USER: ellaarts
+  GIT_EMAIL: ellaarts@outlook.com
+  # THEME_REPO: sanonz/hexo-theme-concise
+  # THEME_BRANCH: master
+  DEPLOY_REPO: ellaarts/blog
+  DEPLOY_BRANCH: gh-pages
 
 jobs:
-  build-and-deploy:
+  build:
+    name: Build on node ${{ matrix.node_version }} and ${{ matrix.os }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node_version: [12.x]
 
     steps:
-      # 获取博客源码和主题
       - name: Checkout
         uses: actions/checkout@v2
 
-      ## since the theme is included in the source branch already, there is no need to checkout the theme
       # - name: Checkout theme repo
       #   uses: actions/checkout@v2
       #   with:
-      #     repository: printempw/hexo-theme-murasaki
-      #     ref: master
-      #     path: themes/murasaki
+      #     repository: ${{ env.THEME_REPO }}
+      #     ref: ${{ env.THEME_BRANCH }}
+      #     path: themes/concise
 
-      # 这里用的是 Node.js 14.x
-      - name: Set up Node.js
+      - name: Checkout deploy repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ env.DEPLOY_REPO }}
+          ref: ${{ env.DEPLOY_BRANCH }}
+          path: .deploy_git
+
+      - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v1
         with:
-          node-version: '14'
+          node-version: ${{ matrix.node_version }}
 
-      # 设置 yarn 缓存，npm 的话可以看 actions/cache@v2 的文档示例
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - name: Use yarn cache
-        uses: actions/cache@v2
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      # 安装依赖
-      - name: Install dependencies
-        run: |
-          yarn install --prefer-offline --frozen-lockfile
-
-      # 从之前设置的 secret 获取部署私钥
-      - name: Set up environment
+      - name: Configuration environment
         env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          HEXO_DEPLOY_PRI: ${{secrets.DEPLOY_KEY}}
         run: |
           sudo timedatectl set-timezone "Asia/Shanghai"
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+          mkdir -p ~/.ssh/
+          echo "$HEXO_DEPLOY_PRI" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-          git config --global user.email "ellaarts@outlook.com"
-          git config --global user.name "ellaarts"
-          echo "deploy-key="
-          echo "$DEPLOY_KEY"
+          git config --global user.name $GIT_USER
+          git config --global user.email $GIT_EMAIL
 
-      # 生成并部署
-      - name: Deploy
+      - name: Install dependencies
         run: |
-          npx hexo deploy --generate
+          npm install
+
+      - name: Deploy hexo
+        run: |
+          npm run deploy
